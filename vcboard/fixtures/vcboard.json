@@ -1,0 +1,34 @@
+[
+    {
+        "pk": 1,
+        "model": "vcboard.forum",
+        "fields": {
+            "site": [1],
+            "name": "Main Forum Category",
+            "slug": "main-forum-category",
+            "is_active": 1
+        }
+    },
+    {
+        "pk": 2,
+        "model": "vcboard.forum",
+        "fields": {
+            "site": [1],
+            "name": "Announcements",
+            "slug": "announcements",
+            "is_active": 1,
+            "parent": 1
+        }
+    },
+    {
+        "pk": 3,
+        "model": "vcboard.forum",
+        "fields": {
+            "site": [1],
+            "name": "Helpful Hints",
+            "slug": "helpful-hints",
+            "is_active": 1,
+            "parent": 1
+        }
+    }
+]
