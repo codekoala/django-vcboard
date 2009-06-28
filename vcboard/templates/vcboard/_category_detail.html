@@ -1,0 +1,21 @@
+{% load i18n vcboard_tags %}
+{% if forloop.first %}<table class="category">{% endif %}
+    <tr class="headers">
+        <th class="forum-name">{% trans 'Forum Name' %}</th>
+        <th class="forum-threads">{% trans 'Threads' %}</th>
+        <th class="forum-posts">{% trans 'Posts' %}</th>
+        <th class="forum-last-post">{% trans 'Last Post' %}</th>
+    </tr>
+    {% for subforum in forum.children.all %}
+    <tr class="{% cycle "forum-odd" "forum-even" %}">
+        {% has_unread_in forum as has_unread %}
+        <td class="forum-name {% if not has_unread %}no-{% endif %}new-posts">
+            <a href="{{ subforum.get_absolute_url }}" class="forum-link">{{ subforum.name }}</a>
+            <div class="forum-description">{{ subforum.description }}</div>
+        </td>
+        <td class="forum-threads">{{ subforum.thread_count }}</td>
+        <td class="forum-posts">{{ subforum.post_count }}</td>
+        <td class="forum-last-post">{{ subforum.last_post }}</td>
+    </tr>
+    {% endfor %}
+{% if forloop.last %}</table>{% endif %}

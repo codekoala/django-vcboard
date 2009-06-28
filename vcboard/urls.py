@@ -1,9 +1,10 @@
 from django.conf.urls.defaults import *
-from vcboard import views
+from vcboard import views, listeners
 
 # TODO: implement URLs for other VCBoard apps here, before the catch-all ?P<path>
 
 urlpatterns = patterns('',
+    url(r'^$', views.forum_home, name='vcboard-home'),
     url(r'^(?P<path>.*)/thread/(?P<thread_id>\d+)/edit/$', 
         views.edit_thread, 
         name='vcboard-edit-thread'),

@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ VCBOARD_NAME }}{% endblock %}
+
+{% block content %}
+<div id="vcboard-container">
+    <div class="breadcrumb">{% block vc-breadcrumb %}
+        <a href="{% url vcboard-home %}">{{ VCBOARD_NAME }}</a>
+    {% endblock %}</div>
+
+    <div class="vc-content">
+        {% block vc-content %}{% endblock %}
+    </div>
+</div>
+{% endblock %}

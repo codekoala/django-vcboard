@@ -1,0 +1,31 @@
+{% load i18n vcboard_tags %}
+<table class="threads">
+    <tr class="headers">
+        <th class="thread-subject">{% trans 'Thread Subject' %}</th>
+        <th class="thread-replies">{% trans 'Replies' %}</th>
+        <th class="thread-views">{% trans 'Views' %}</th>
+        <th class="thread-last-post">{% trans 'Last Post' %}</th>
+    </tr>
+    {% for thread in page.object_list %}
+    <tr class="{% cycle "thread-odd" "thread-even" %}">
+        {% has_unread_in thread as has_unread %}
+        <td class="thread-subject {% if not has_unread %}no-{% endif %}new-replies">
+            <a href="{{ thread.get_absolute_url }}" class="thread-link">{{ thread.subject }}</a>
+            <div class="thread-meta">
+                {% trans 'Started By' %} 
+                <a href="{{ thread.author.forum_profile.get_absolute_url }}">{{ thread.author }}</a>
+            </div>
+        </td>
+        <td class="thread-replies">{{ thread.reply_count }}</td>
+        <td class="thread-views">{{ thread.view_count }}</td>
+        <td class="thread-last-post">{{ thread.last_post }}</td>
+    </tr>
+    {% empty %}
+    <tr>
+        <td colspan="4" class="empty-forum">
+            {% trans 'There are no posts in this forum!' %}
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+

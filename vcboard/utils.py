@@ -1,4 +1,33 @@
+from django.shortcuts import render_to_response
+from django.template import RequestContext
 from django.template.defaultfilters import slugify
+
+def can(user, permission, forum=None):
+    """
+    Determines whether or not the specified user has the specified permission
+    """
+    if user.has_perm(permission) or \
+       (hasattr(user.forum_profile, 'rank') and \
+       user.forum_profile.rank.has_perm(forum, permission)):
+        return True
+
+    return False
+
+class PermissionBot(object):
+    def __init__(self, user, forum):
+        self.user = user
+        self.forum = forum
+
+    def __getattr__(self, key):
+        return can(self.user, key, forum=self.forum)
+
+def render(request, template, data, args=(), kwargs={}):
+    """
+    A simplified way to render a response
+    """
+    return render_to_response(template, data,
+                              context_instance=RequestContext(request),
+                              *args, **kwargs)
 
 def unique_slug(string, klass, params={}, slug_field='slug'):
     """

@@ -1,0 +1,24 @@
+{% extends 'vcboard/base.html' %}
+{% load i18n %}
+
+{% block title %}{{ block.super }}: {% trans 'Create Thread' %}{% endblock %}
+
+{% block vc-breadcrumb %}
+{{ block.super }} {% for f in forum.hierarchy %}
+&rsaquo; <a href="{{ f.get_absolute_url }}">{{ f.name }}</a>
+{% endfor %} &rsaquo; {% trans 'Create Thread' %}
+{% endblock %}
+
+{% block vc-content %}
+<form action="." method="post">
+<table class="thread-form">
+    {{ form }}
+    <tr>
+        <td class="buttons" colspan="2">
+            <label for="save-thread">&nbsp;</label>
+            <input type="submit" id="save-thread" value="{% trans 'Create Thread' %}" />
+        </td>
+    </tr>
+</table>
+</form>
+{% endblock %}

@@ -1,0 +1,13 @@
+{% extends 'vcboard/base.html' %}
+{% load i18n %}
+
+{% block title %}{{ block.super }}: {% trans 'Home' %}{% endblock %}
+{% block vc-breadcrumb %}
+{{ block.super }} &rsaquo; {% trans 'Home' %}
+{% endblock %}
+
+{% block vc-content %}
+{% for forum in forums %}
+{% include 'vcboard/_category_detail.html' %}
+{% endfor %}
+{% endblock %}

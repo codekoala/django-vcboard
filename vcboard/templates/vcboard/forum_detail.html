@@ -1,0 +1,24 @@
+{% extends 'vcboard/base.html' %}
+{% load i18n %}
+
+{% block title %}{{ block.super }}: {{ forum }}{% endblock %}
+{% block vc-breadcrumb %}
+{{ block.super }} {% for f in forum.hierarchy %}
+&rsaquo; <a href="{{ f.get_absolute_url }}">{{ f.name }}</a>
+{% endfor %}
+{% endblock %}
+
+{% block vc-content %}
+{% if forum.children.count %}
+<table class="subforums">
+{% include 'vcboard/_category_detail.html' %}
+</table>
+{% endif %}
+
+{% if not forum.is_category %}
+{% include 'vcboard/_forum_controls.html' %}
+{% include 'vcboard/_forum_threads.html' %}
+{% include 'vcboard/_forum_controls.html' %}
+{% include 'vcboard/_forum_pagination.html' %}
+{% endif %}
+{% endblock %}
