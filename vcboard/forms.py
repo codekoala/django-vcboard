@@ -4,4 +4,4 @@ from models import Thread, Post
 class ThreadForm(forms.ModelForm):
     class Meta:
         model = Thread
-        fields = ('subject', 'content')
+        fields = ('subject', 'content', 'is_draft')

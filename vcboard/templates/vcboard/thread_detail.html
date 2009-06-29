@@ -1,0 +1,20 @@
+{% extends 'vcboard/base.html' %}
+{% load i18n %}
+
+{% block title %}{{ block.super }}: {{ thread }}{% endblock %}
+{% block vc-breadcrumb %}
+{{ block.super }} {% for f in forum.hierarchy %}
+&rsaquo; <a href="{{ f.get_absolute_url }}">{{ f.name }}</a>
+{% endfor %} &rsaquo; {{ thread.subject }}
+{% endblock %}
+
+{% block vc-content %}
+<table class="thread-table">
+    {% with thread as post %}
+    {% include 'vcboard/_thread_post.html' %}
+    {% endwith %}
+    {% for post in page.object_list %}
+    {% include 'vcboard/_thread_post.html' %}
+    {% endfor %}
+</table>
+{% endblock %}

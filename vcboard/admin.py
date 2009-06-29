@@ -3,9 +3,20 @@ from django.utils.translation import ugettext_lazy as _
 from models import Setting, Forum, Thread, Post
 
 class SettingAdmin(admin.ModelAdmin):
-    list_display = ('section', 'key', 'primitive_type')
+    list_display = ('site', 'section', 'key', 'primitive_type', 'short_value',)
+    list_display_links = ('site', 'section', 'key')
     list_filter = ('section', 'primitive_type', 'site')
     search_fields = ('section', 'key', 'value')
+
+    def short_value(self, obj):
+        value = obj.evaluate()
+        try:
+            if len(value) > 50:
+                return value[:50] + '...'
+        except:
+            pass
+        return value
+    short_value.short_description = _('Value')
 
 class ForumAdmin(admin.ModelAdmin):
     list_display = ('__unicode__', 'parent', 'thread_count', 'post_count', 'is_active')

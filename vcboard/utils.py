@@ -2,15 +2,41 @@ from django.shortcuts import render_to_response
 from django.template import RequestContext
 from django.template.defaultfilters import slugify
 
-def can(user, permission, forum=None):
+PERM_MAP = {
+    'vcboard.view_forum_home': (
+        'general', 'anonymous_home', bool, True),
+    'vcboard.view_forum': (
+        'general', 'anonymous_forum', bool, True),
+    'vcboard.show_thread': (
+        'forum', 'anonymous_show_thread', bool, True),
+    'vcboard.add_thread': (
+        'forum', 'anonymous_add_thread', bool, False),
+    'vcboard.add_post': (
+        'thread', 'anonymous_add_post', bool, False),
+}
+
+def can(user, permission, section=None, key=None, \
+        primitive=None, default=None, forum=None):
     """
     Determines whether or not the specified user has the specified permission
     """
+    from vcboard import config
     if user.has_perm(permission) or \
        (hasattr(user.forum_profile, 'rank') and \
+       user.forum_profile.rank != None and \
        user.forum_profile.rank.has_perm(forum, permission)):
         return True
 
+    if not (section or key):
+        print 'Looking for', permission
+        args = PERM_MAP.get(permission, ())
+    else:
+        args = (section, key, primitive, default)
+
+    if len(args):
+        print 'Args', args,
+        print config(*args)
+        return config(*args)
     return False
 
 class PermissionBot(object):
@@ -19,6 +45,7 @@ class PermissionBot(object):
         self.forum = forum
 
     def __getattr__(self, key):
+        key = key.replace('__', '.')
         return can(self.user, key, forum=self.forum)
 
 def render(request, template, data, args=(), kwargs={}):

@@ -18,7 +18,10 @@
         </td>
         <td class="thread-replies">{{ thread.reply_count }}</td>
         <td class="thread-views">{{ thread.view_count }}</td>
-        <td class="thread-last-post">{{ thread.last_post }}</td>
+        <td class="thread-last-post">
+            {{ thread.last_post.date_created|timesince }}
+            {% trans "by" %} {{ thread.last_post.author_link }}
+        </td>
     </tr>
     {% empty %}
     <tr>

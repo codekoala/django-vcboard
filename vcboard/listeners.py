@@ -1,7 +1,13 @@
 from django.db.models import signals
-from vcboard import signals as vcb
-from models import Forum, Thread, Post
+from vcboard import config, signals as vcb
+from models import Setting, Forum, Thread, Post
 from datetime import datetime
+
+def update_config(sender, instance, created, **kwargs):
+    """
+    Updates the configuration cache with new settings
+    """
+    config.set(instance)
 
 def post_created(sender, instance, created, **kwargs):
     """
@@ -36,5 +42,6 @@ def update_last_in(sender, instance, request, **kwargs):
 
 signals.post_save.connect(post_created, sender=Thread)
 signals.post_save.connect(post_created, sender=Post)
+signals.post_save.connect(update_config, sender=Setting)
 vcb.object_shown.connect(update_last_in, sender=Forum)
 vcb.object_shown.connect(update_last_in, sender=Thread)

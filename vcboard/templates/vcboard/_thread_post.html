@@ -1,0 +1,22 @@
+{% load i18n %}
+<tr class="thread-{% cycle "odd" "even" %}">
+    <td class="author-info">
+        {{ post.author_link }}
+        {% if post.author %}
+        <div class="stats">
+            <div class="registered">
+                {% trans "Member since:" %}
+                {{ post.author.join_date }}
+            </div>
+            <div class="posted">
+                {% trans "Posted:" %}
+                {{ post.date_created|timesince }}
+                {% trans "ago" %}
+            </div>
+        </div>
+        {% endif %}
+    </td>
+    <td class="comments">
+        {{ post.content }}
+    </td>
+</tr>

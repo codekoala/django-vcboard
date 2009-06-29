@@ -1,13 +1,21 @@
 from django.db import models
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, AnonymousUser
 from django.contrib.sites.models import Site
+from django.core.urlresolvers import reverse
+from django.template.defaultfilters import mark_safe
 from django.utils.translation import ugettext_lazy as _
 from utils import unique_slug
 
 class SettingManager(models.Manager):
     _cache = {}
 
+    def set(self, setting):
+        cache_key = '%s.%s' % (setting.section.upper(), setting.key.upper())
+        self._cache[cache_key] = setting
+
     def __call__(self, section, key, primitive=str, default=''):
+        section = section.upper()
+        key = key.upper()
         cache_key = '%s.%s' % (section, key)
         if not self._cache.has_key(cache_key):
             if not isinstance(primitive, str):
@@ -51,12 +59,18 @@ class Setting(models.Model):
             'float': float,
             'int': int,
         }.get(self.primitive_type, str)
+
+        # booleans are special this way
+        if cast == bool:
+            return self.value == '1' and True or False
+
         return cast(self.value)
 
     class Meta:
         ordering = ('section', 'key')
         permissions = (
             (_('Can view forum home'), 'view_forum_home'),
+            (_('Can view forum'), 'view_forum'),
         )
 
 class ForumManager(models.Manager):
@@ -156,6 +170,11 @@ class Forum(models.Model):
         ordering = ('parent__id', 'ordering', 'name')
         unique_together = ('parent', 'slug')
 
+class PostManager(models.Manager):
+    def valid(self):
+        # retrieves posts that are not drafts or deleted
+        return self.get_query_set().filter(is_draft=False, is_deleted=False)
+
 class Post(models.Model):
     parent = models.ForeignKey('Thread', blank=True, null=True, related_name='posts')
     author = models.ForeignKey(User, blank=True, null=True, related_name='posts')
@@ -163,9 +182,12 @@ class Post(models.Model):
     content = models.TextField(_('Content'))
     rating = models.FloatField(_('Rating'), default=0.0)
     is_draft = models.BooleanField(_('Is Incomplete'), blank=True, default=False, help_text=_('The post will not appear online when this is checked.'))
+    is_deleted = models.BooleanField(_('Is Deleted'), editable=False)
     ip_address = models.IPAddressField(_('IP Address'), blank=True, help_text=_('The IP address of the user who posted this post.'))
     date_created = models.DateTimeField(auto_now_add=True)
     date_updated = models.DateTimeField(auto_now=True)
+
+    objects = PostManager()
 
     def __unicode__(self):
         return self.subject
@@ -182,6 +204,19 @@ class Post(models.Model):
             self._rate_count = self.ratings.count()
         return self._rate_count
     rate_count = property(_get_rate_count)
+
+    def _get_author_link(self):
+        if self.author:
+            params = (
+                reverse('vcboard-user-profile', args=[self.id]),
+                self.author.username
+            )
+            link = '<a href="%s" class="author-link">%s</a>' % params
+            val = mark_safe(link)
+        else:
+            val = _('Anonymous')
+        return val
+    author_link = property(_get_author_link)
 
     def rate_post(self, user, rating):
         """
@@ -202,7 +237,10 @@ class Post(models.Model):
         return self.rating
 
     class Meta:
-            ordering = ('date_created',)
+        ordering = ('date_created',)
+        permissions = (
+            ('show_post', _('Can view individual posts')),
+        )
 
 class Thread(Post):
     forum = models.ForeignKey(Forum, related_name='threads')
@@ -220,10 +258,11 @@ class Thread(Post):
     get_absolute_url = models.permalink(get_absolute_url)
 
     class Meta:
-        ordering = ('date_created',)
+        ordering = ('-date_created',)
         permissions = (
             ('can_sticky', _('Can sticky/unsticky threads')),
             ('can_close', _('Can close/reopen threads')),
+            ('reply_to_thread', _('Can reply to threads')),
         )
 
 class Rating(models.Model):
@@ -272,4 +311,4 @@ def get_profile(user):
         user._forum_profile = ForumProfile.objects.get_or_create(user=user)[0]
     return user._forum_profile
 User.forum_profile = property(get_profile)
-
+AnonymousUser.forum_profile = ForumProfile()
