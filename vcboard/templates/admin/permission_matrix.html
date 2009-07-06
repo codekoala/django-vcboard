@@ -1,0 +1,120 @@
+{% extends 'admin/base_site.html' %}
+{% load i18n vcboard_tags %}
+
+{% block title %}{% trans "Permission Matrix" %}{{ block.super }}{% endblock %}
+
+{% block extrahead %}
+<script type="text/javascript" src="http://jqueryjs.googlecode.com/files/jquery-1.3.2.min.js"></script>
+<script type="text/javascript">
+var forum_ids = [{% for f in form.forums %}{{ f.id }}{% if not forloop.last %}, {% endif %}{% endfor %}];
+var perm_ids = [{% for p in form.permissions %}{{ p.id }}{% if not forloop.last %}, {% endif %}{% endfor %}];
+$(document).ready(function () {
+    // allow the user to select all permissions in a particular forum
+    $('input.select-all-none-forum').live('click', function(e) {
+        var checked = $('#' + e.target.id).attr('checked')
+        var value = checked ? 'on' : '';
+        for (var i = 0; i < perm_ids.length; i++) {
+            var pid = perm_ids[i];
+            var fid = '#id_' + e.target.id + pid;
+            $(fid).attr('checked', value)
+        }
+    });
+
+    // allow the user to select a permission for all forums
+    $('input.select-all-none-perm').live('click', function(e) {
+        var checked = $('#' + e.target.id).attr('checked')
+        var value = checked ? 'on' : '';
+        for (var i = 0; i < forum_ids.length; i++) {
+            var fid = forum_ids[i];
+            var pid = '#id_f_' + fid + e.target.id;
+            $(pid).attr('checked', value)
+        }
+    });
+
+    // allow the user to select everything or nothing quickly
+    $('input#select-everything').live('click', function(e) {
+        var checked = $('#select-everything').attr('checked')
+        var value = checked ? 'on' : '';
+        for (var f = 0; f < forum_ids.length; f++) {
+            var fid = forum_ids[f];
+            $('#f_' + fid + '_p_').attr('checked', value);
+            for (var p = 0; p < perm_ids.length; p++) {
+                var pid = perm_ids[p];
+                $('#id_f_' + fid + '_p_' + pid).attr('checked', value);
+            }
+        }
+
+        // Now select all of the "select all/none" checkboxes for permissions
+        for (var p = 0; p < perm_ids.length; p++) {
+            var pid = perm_ids[p];
+            $('#_p_' + pid).attr('checked', value);
+        }
+    });
+});
+</script>
+<style type="text/css">
+#permission-matrix td {
+    text-align: center;
+}
+</style>
+{% endblock %}
+
+{% block breadcrumbs %}
+    <div class="breadcrumbs">
+        <a href="../../">{% trans "Home" %}</a> &rsaquo; 
+        {% trans "Permission Matrix" %} &rsaquo;
+        {{ object }}
+    </div>
+{% endblock %}
+
+{% block content %}
+<h3>{% trans "Permissions For" %} {{ object }}</h3>
+<form action="." method="post">
+<table id="permission-matrix">
+    <tr class="header">
+        <th>Permission</th>
+        {% ifnotequal form.forums|length 1 %}
+        <th>
+            {% trans "Select<br />All/None" %}
+        </th>
+        {% endifnotequal %}
+        {% for forum in form.forums %}
+        <th>
+            {{ forum.name }}
+            {% if forum.parent %}<div class="quiet">{{ forum.parent }}</div>{% endif %}
+        </th>
+        {% endfor %}
+    </tr>
+    <tr class="select-all">
+        <th>{% trans "Select All/None" %}</th>
+        {% ifnotequal form.forums|length 1 %}
+        <td>
+            <input type="checkbox" class="select-all-none" id="select-everything" />
+        </td>
+        {% endifnotequal %}
+        {% for forum in form.forums %}
+        <td>
+            <input type="checkbox" class="select-all-none-forum" id="f_{{ forum.id }}_p_" />
+        </td>
+        {% endfor %}
+    </tr>
+    {% for perm in form.permissions %}
+    <tr class="{% cycle "odd" "even" %}">
+        <th>{{ perm.name }}</th>
+        {% ifnotequal form.forums|length 1 %}
+        <td>
+            <input type="checkbox" class="select-all-none-perm" id="_p_{{ perm.id }}" />
+        </td>
+        {% endifnotequal %}
+        {% for forum in form.forums %}
+        <td>
+            {% get_matrix_field form forum perm %}
+        </td>
+        {% endfor %}
+    </tr>
+    {% endfor %}
+</table>
+<p>{% trans "Saving permissions may take a bit of time. Please be patient." %}</p>
+<input type="submit" value="Save Permissions" />
+</form> 
+{% endblock %}

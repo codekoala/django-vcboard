@@ -1,22 +1,48 @@
-{% load i18n %}
+{% load i18n humanize %}
 <tr class="thread-{% cycle "odd" "even" %}">
-    <td class="author-info">
+    <td class="author-info" rowspan="2">
         {{ post.author_link }}
         {% if post.author %}
         <div class="stats">
             <div class="registered">
                 {% trans "Member since:" %}
-                {{ post.author.join_date }}
+                {{ post.author.date_joined|naturalday }}
             </div>
             <div class="posted">
                 {% trans "Posted:" %}
-                {{ post.date_created|timesince }}
+                {{ post.post_date_info }}
                 {% trans "ago" %}
             </div>
         </div>
         {% endif %}
     </td>
     <td class="comments">
+        <h6 class="post-subject">{% trans "Subject:" %} {{ post.subject }}</h6>
         {{ post.content }}
+    </td>
+</tr>
+<tr>
+    <td class="post-controls">
+        {% ifequal post.author user %}
+        {% if forum_perms.reply_to_own_threads %}
+        <a href="{% url vcboard-create-reply forum.path thread.id %}?quoting={{ post.id }}" class="btn-post-quote">{% trans 'Quote' %}</a>
+        {% endif %}
+        {% if forum_perms.edit_own_replies and post.parent %}
+        <a href="{% url vcboard-edit-post forum.path post.id %}" class="btn-post-edit">{% trans 'Edit' %}</a>
+        {% endif %}
+        {% if forum_perms.delete_own_replies and post.parent %}
+        <a href="{% url vcboard-delete-post forum.path post.id %}" class="btn-post-delete">{% trans 'Delete' %}</a>
+        {% endif %}
+        {% else %}
+        {% if forum_perms.reply_to_other_threads %}
+        <a href="{% url vcboard-create-reply forum.path thread.id %}?quoting={{ post.id }}" class="btn-post-quote">{% trans 'Quote' %}</a>
+        {% endif %}
+        {% if forum_perms.edit_other_replies and post.parent %}
+        <a href="{% url vcboard-edit-post forum.path post.id %}" class="btn-post-edit">{% trans 'Edit' %}</a>
+        {% endif %}
+        {% if forum_perms.delete_other_replies and post.parent %}
+        <a href="{% url vcboard-delete-post forum.path post.id %}" class="btn-post-delete">{% trans 'Delete' %}</a>
+        {% endif %}
+        {% endifequal %}
     </td>
 </tr>

@@ -1,7 +1,7 @@
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
-from django.contrib.auth.models import User, Permission
-from vcboard.models import Forum, ForumProfile
+from django.contrib.auth.models import User
+from vcboard.models import Forum, ForumProfile, PermissionMatrix
 
 class RankManager(models.Manager):
     def active(self):
@@ -19,50 +19,27 @@ class Rank(models.Model):
 
     objects = RankManager()
 
-    def has_perm(self, forum, permission):
-        """
-        Determines whether or not this Rank has a particular permission for
-        the specified forum
-        """
-        qs = self.forum_permissions.filter(forum=forum,
-                                           permission__codename=permission)
-        if qs.count():
-            return True
-        return False
-
     class Meta:
         ordering = ('ordering', 'title')
 
-class RankPermissionManager(models.Manager):
-    def for_forum(self, forum):
-        return self.get_query_set().filter(forum=forum)
+class RankPermission(PermissionMatrix):
+    rank = models.ForeignKey(Rank)
 
-class RankPermission(models.Model):
-    rank = models.ForeignKey(Rank, related_name='forum_permissions')
-    forum = models.ForeignKey(Forum, null=True, blank=True)
-    permissions = models.ManyToManyField(Permission, symmetrical=False)
-
-    objects = RankPermissionManager()
-
-    class Meta:
-        verbose_name = _('Permission')
-        verbose_name_plural = _('Permissions')
-
-def get_rank(user):
+def get_rank(forumprofile):
     """
     Determines a user's rank
     """
-    if not hasattr(user.forum_profile, '_rank'):
-        if user.ranks.count():
-            rank = user.ranks.all()[0]
+    if not hasattr(forumprofile, '_rank'):
+        if forumprofile.user.ranks.count():
+            rank = forumprofile.user.ranks.all()[0]
         else:
             try:
-                qs = Rank.objects.active()
-                qs = qs.filter(posts_required__lte=user.post_count)
+                qs = Rank.objects.active().filter(is_special=False)
+                qs = qs.filter(posts_required__lte=forumprofile.post_count)
                 rank = qs.order_by('-posts_required')[0]
             except IndexError:
                 rank = Rank()
-        user.forum_profile._rank = rank
-    return user.forum_profile._rank
+        forumprofile._rank = rank
+    return forumprofile._rank
 ForumProfile.rank = property(get_rank)
 

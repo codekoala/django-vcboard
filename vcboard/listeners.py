@@ -1,7 +1,13 @@
 from django.db.models import signals
 from vcboard import config, signals as vcb
-from models import Setting, Forum, Thread, Post
+from models import Setting, Forum, Thread, Post, UserGroup
 from datetime import datetime
+
+def only_one_default_group(sender, instance, created, **kwargs):
+    """
+    Makes sure there is only one default group at any time
+    """
+    UserGroup.objects.exclude(pk=instance.pk).update(is_default=False)
 
 def update_config(sender, instance, created, **kwargs):
     """
@@ -18,8 +24,11 @@ def post_created(sender, instance, created, **kwargs):
             instance.parent.reply_count += 1
             instance.parent.last_post = instance
             instance.parent.save()
+            collection = instance.parent.forum.hierarchy
+        else:
+            collection = instance.forum.hierarchy
 
-        for forum in instance.forum.hierarchy:
+        for forum in collection:
             if sender == Thread:
                 forum.thread_count += 1
 
@@ -45,3 +54,5 @@ signals.post_save.connect(post_created, sender=Post)
 signals.post_save.connect(update_config, sender=Setting)
 vcb.object_shown.connect(update_last_in, sender=Forum)
 vcb.object_shown.connect(update_last_in, sender=Thread)
+signals.post_save.connect(only_one_default_group, sender=UserGroup)
+

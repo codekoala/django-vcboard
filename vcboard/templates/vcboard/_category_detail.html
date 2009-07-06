@@ -15,7 +15,15 @@
         </td>
         <td class="forum-threads">{{ subforum.thread_count }}</td>
         <td class="forum-posts">{{ subforum.post_count }}</td>
-        <td class="forum-last-post">{{ subforum.last_post }}</td>
+        <td class="forum-last-post">
+            {% if subforum.last_post %}
+            <a href="{{ subforum.last_post.get_absolute_url }}">{{ subforum.last_post }}</a>
+            {% trans "by" %} {{ subforum.last_post.author_link }}
+            {% trans "about" %} {{ subforum.last_post_info }} {% trans "ago" %}
+            {% else %}
+            {% trans "None" %}
+            {% endif %}
+        </td>
     </tr>
     {% endfor %}
 {% if forloop.last %}</table>{% endif %}

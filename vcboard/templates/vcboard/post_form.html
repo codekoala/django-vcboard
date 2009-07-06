@@ -1,0 +1,26 @@
+{% extends 'vcboard/base.html' %}
+{% load i18n %}
+
+{% block title %}{{ block.super }}: {% trans 'Post Reply' %}{% endblock %}
+
+{% block vc-breadcrumb %}
+{{ block.super }} {% for f in forum.hierarchy %}
+&rsaquo; <a href="{{ f.get_absolute_url }}">{{ f.name }}</a>
+{% endfor %} &rsaquo; <a href="{{ thread.get_absolute_url }}">{{ thread.subject }}</a>
+&rsaquo; {% trans 'Post Reply' %}
+{% endblock %}
+
+{% block vc-content %}
+<h2>{% trans 'Post Reply' %}</h2>
+<form action="." method="post">
+<table class="post-form">
+    {{ form }}
+    <tr>
+        <td class="buttons" colspan="2">
+            <label for="save-post">&nbsp;</label>
+            <input type="submit" id="save-post" value="{% trans 'Post Reply' %}" />
+        </td>
+    </tr>
+</table>
+</form>
+{% endblock %}

@@ -1,10 +1,10 @@
 from django.db import models
-from django.contrib.auth.models import User, AnonymousUser
+from django.contrib.auth.models import User, AnonymousUser, Group, Permission
 from django.contrib.sites.models import Site
 from django.core.urlresolvers import reverse
-from django.template.defaultfilters import mark_safe
+from django.template.defaultfilters import mark_safe, timesince
 from django.utils.translation import ugettext_lazy as _
-from utils import unique_slug
+from utils import unique_slug, PP
 
 class SettingManager(models.Manager):
     _cache = {}
@@ -68,10 +68,53 @@ class Setting(models.Model):
 
     class Meta:
         ordering = ('section', 'key')
+
+        # yes, some of these overlap with the built-in permissions. oh well.
         permissions = (
-            (_('Can view forum home'), 'view_forum_home'),
-            (_('Can view forum'), 'view_forum'),
+            (PP('view_forum'), 'Can view forum'),
+            (PP('view_other_threads'), 'Can view threads started by others'),
+            (PP('edit_own_threads'), 'Can edit own threads'),
+            (PP('edit_other_threads'), 'Can edit threads started by others'),
+            (PP('close_own_threads'), 'Can close own threads'),
+            (PP('close_other_threads'), 'Can close threads started by others'),
+            (PP('open_own_threads'), 'Can open own threads'),
+            (PP('open_other_threads'), 'Can open threads started by others'),
+            (PP('delete_own_threads'), 'Can delete own threads'),
+            (PP('delete_other_threads'), 'Can delete threads started by others'),
+            (PP('move_own_threads'), 'Can move own threads'),
+            (PP('move_other_threads'), 'Can move threads started by others'),
+            (PP('start_threads'), 'Can start threads'),
+            (PP('reply_to_own_threads'), 'Can reply to own threads'),
+            (PP('reply_to_other_threads'), 'Can reply to threads started by others'),
+            (PP('edit_own_replies'), 'Can edit own replies'),
+            (PP('edit_other_replies'), 'Can edit replies posted by others'),
+            (PP('delete_own_replies'), 'Can delete own replies'),
+            (PP('delete_other_replies'), 'Can delete replies posted by others'),
+            (PP('attach_files'), 'Can attach files to posts'),
+            (PP('download_attachments'), 'Can download attachments'),
+            ('search_posts', 'Can search'),
+            ('view_profiles', 'Can view user profiles'),
+            ('view_forum_home', 'Can view forum home'),
         )
+
+class UserGroupManager(models.Manager):
+    def active(self):
+        site = Site.objects.get_current()
+        return self.get_query_set().filter(is_active=True, site=site)
+
+    def default(self):
+        group, created = self.active().get_or_create(is_default=True)
+        if created:
+            group.name = 'Member'
+            group.save()
+        return group
+
+class UserGroup(Group):
+    site = models.ForeignKey(Site, default=Site.objects.get_current)
+    is_active = models.BooleanField(blank=True)
+    is_default = models.BooleanField(blank=True)
+
+    objects = UserGroupManager()
 
 class ForumManager(models.Manager):
     _path_cache = {}
@@ -153,6 +196,15 @@ class Forum(models.Model):
         return self._hierarchy
     hierarchy = property(_get_hierarchy)
 
+    def _get_last_post_info(self):
+        if self.last_post:
+            params = (
+                self.last_post.date_created.strftime('%d %b %y at %H:%M:%S'),
+                timesince(self.last_post.date_created),
+            )
+            return mark_safe('<abbr title="Posted %s">%s</abbr>' % params)
+    last_post_info = property(_get_last_post_info)
+
     def save(self, *args, **kwargs):
         """
         Ensures that this forum always has a unique slug and that all top-level
@@ -196,6 +248,14 @@ class Post(models.Model):
         return ('vcboard-show-post', [self.forum.path, self.id])
     get_absolute_url = models.permalink(get_absolute_url)
 
+    def _get_post_date_info(self):
+        params = (
+            self.date_created.strftime('%d %b %y at %H:%M:%S'),
+            timesince(self.date_created),
+        )
+        return mark_safe('<abbr title="Posted %s">%s</abbr>' % params)
+    post_date_info = property(_get_post_date_info)
+
     def _get_rate_count(self):
         """
         Determines how many times this post was rated
@@ -208,7 +268,7 @@ class Post(models.Model):
     def _get_author_link(self):
         if self.author:
             params = (
-                reverse('vcboard-user-profile', args=[self.id]),
+                reverse('vcboard-user-profile', args=[self.author.username]),
                 self.author.username
             )
             link = '<a href="%s" class="author-link">%s</a>' % params
@@ -238,9 +298,6 @@ class Post(models.Model):
 
     class Meta:
         ordering = ('date_created',)
-        permissions = (
-            ('show_post', _('Can view individual posts')),
-        )
 
 class Thread(Post):
     forum = models.ForeignKey(Forum, related_name='threads')
@@ -248,10 +305,24 @@ class Thread(Post):
     view_count = models.PositiveIntegerField(_('Views'), default=0)
     is_sticky = models.BooleanField(_('Is Sticky'), blank=True, default=True, help_text=_('Sticky threads are always at the top of the threads in a forum.'))
     is_closed = models.BooleanField(_('Is Closed'), blank=True, default=False, help_text=_('Threads cannot be replied to once closed.'))
-    last_post = models.ForeignKey(Post, null=True, related_name='last_thread_post')
+    _last_post = models.ForeignKey(Post, null=True, related_name='last_thread_post')
 
     def __unicode__(self):
         return self.subject
+
+    def _get_last_post(self):
+        return self._last_post or self
+    def _set_last_post(self, post):
+        self._last_post = post
+    last_post = property(_get_last_post, _set_last_post)
+
+    def _get_last_post_info(self):
+        params = (
+            self.last_post.date_created.strftime('%d %b %y at %H:%M:%S'),
+            timesince(self.last_post.date_created),
+        )
+        return mark_safe('<abbr title="Posted %s">%s</abbr>' % params)
+    last_post_info = property(_get_last_post_info)
 
     def get_absolute_url(self):
         return ('vcboard-show-thread', [self.forum.path, self.id])
@@ -259,11 +330,6 @@ class Thread(Post):
 
     class Meta:
         ordering = ('-date_created',)
-        permissions = (
-            ('can_sticky', _('Can sticky/unsticky threads')),
-            ('can_close', _('Can close/reopen threads')),
-            ('reply_to_thread', _('Can reply to threads')),
-        )
 
 class Rating(models.Model):
     post = models.ForeignKey(Post, related_name='ratings')
@@ -289,26 +355,39 @@ class ForumWatch(Watch):
 class ThreadWatch(Watch):
     thread = models.ForeignKey(Thread, related_name='watching_users')
 
+class PermissionMatrix(models.Model):
+    site = models.ForeignKey(Site, default=Site.objects.get_current)
+    forum = models.ForeignKey(Forum)
+    permission = models.ForeignKey(Permission)
+    has_permission = models.NullBooleanField(default=None)
+
+    class Meta:
+        abstract = True
+
+class ForumPermission(PermissionMatrix):
+    pass
+
+class GroupPermission(PermissionMatrix):
+    group = models.ForeignKey(UserGroup)
+
+class UserPermission(PermissionMatrix):
+    user = models.ForeignKey(User)
+
 class ForumProfile(models.Model):
     user = models.OneToOneField(User)
+    group = models.ForeignKey(UserGroup, null=True, related_name='members')
     thread_count = models.PositiveIntegerField(default=0)
     post_count = models.PositiveIntegerField(default=0)
     date_created = models.DateTimeField(auto_now_add=True)
     date_updated = models.DateTimeField(auto_now=True)
 
-    def __getattr__(self, key):
-        """
-        Attempts to find a dynamic attribute for this user based on the key
-        """
-        if not key.startswith('_'):
-            # look for attributes for this user's profile
-            pass
-
 def get_profile(user):
-    # This will retrieve and cache a user's profile for the forum.  If a user
-    # does not have a profile, one will be created for them.
-    if not hasattr(user, '_forum_profile'):
-        user._forum_profile = ForumProfile.objects.get_or_create(user=user)[0]
-    return user._forum_profile
-User.forum_profile = property(get_profile)
-AnonymousUser.forum_profile = ForumProfile()
+    if not hasattr(user, '_profile'):
+        user._profile = ForumProfile.objects.get_or_create(user=user)[0]
+        if not user._profile.group:
+            user._profile.group = UserGroup.objects.default()
+            user._profile.save()
+    return user._profile
+User.forumprofile = property(get_profile)
+AnonymousUser.forumprofile = ForumProfile()
+

@@ -1,0 +1,42 @@
+{% load i18n vcboard_tags %}
+<div class="thread-controls">
+{% ifequal thread.author user %}
+{% if forum_perms.reply_to_own_threads %}
+    <a href="{% url vcboard-create-reply forum.path thread.id %}" class="btn-thread-reply">{% trans 'Reply' %}</a>
+{% endif %}
+{% if forum_perms.edit_own_threads %}
+    <a href="{% url vcboard-edit-thread forum.path thread.id %}" class="btn-thread-edit">{% trans 'Edit Thread' %}</a>
+{% endif %}
+{% if forum_perms.delete_own_threads %}
+    <a href="{% url vcboard-delete-thread forum.path thread.id %}" class="btn-thread-delete">{% trans 'Delete Thread' %}</a>
+{% endif %}
+{% if forum_perms.close_own_threads and not thread.is_closed %}
+    <a href="{% url vcboard-close-thread forum.path thread.id %}" class="btn-thread-close">{% trans 'Close Thread' %}</a>
+{% endif %}
+{% if forum_perms.open_own_threads and thread.is_closed %}
+    <a href="{% url vcboard-open-thread forum.path thread.id %}" class="btn-thread-open">{% trans 'Re-open Thread' %}</a>
+{% endif %}
+{% if forum_perms.move_own_threads %}
+    <a href="{% url vcboard-move-thread forum.path thread.id %}" class="btn-thread-move">{% trans 'Move Thread' %}</a>
+{% endif %}
+{% else %}
+{% if forum_perms.reply_to_other_threads %}
+    <a href="{% url vcboard-create-reply forum.path thread.id %}" class="btn-thread-reply">{% trans 'Reply' %}</a>
+{% endif %}
+{% if forum_perms.edit_other_threads %}
+    <a href="{% url vcboard-edit-thread forum.path thread.id %}" class="btn-thread-edit">{% trans 'Edit Thread' %}</a>
+{% endif %}
+{% if forum_perms.delete_other_threads %}
+    <a href="{% url vcboard-delete-thread forum.path thread.id %}" class="btn-thread-edit">{% trans 'Delete Thread' %}</a>
+{% endif %}
+{% if forum_perms.close_other_thread and not thread.is_closed %}
+    <a href="{% url vcboard-close-thread forum.path thread.id %}" class="btn-thread-close">{% trans 'Close Thread' %}</a>
+{% endif %}
+{% if forum_perms.open_other_thread and thread.is_closed %}
+    <a href="{% url vcboard-open-thread forum.path thread.id %}" class="btn-thread-open">{% trans 'Re-open Thread' %}</a>
+{% endif %}
+{% if forum_perms.move_other_threads %}
+    <a href="{% url vcboard-move-thread forum.path thread.id %}" class="btn-thread-move">{% trans 'Move Thread' %}</a>
+{% endif %}
+{% endifequal %}
+</div>

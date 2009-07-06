@@ -1,7 +1,9 @@
 {% load i18n vcboard_tags %}
 <div class="forum-controls">
 {% get_forum_perms forum as forum_perms %}
-{% if forum_perms.vcboard__add_thread and not forum.is_category %}
-    <a href="{% url vcboard-create-thread forum.path %}">{% trans 'Create Thread' %}</a>
+{% if not forum.is_category %}
+{% if forum_perms.start_threads %}
+    <a href="{% url vcboard-create-thread forum.path %}">{% trans 'Start Thread' %}</a>
+{% endif %}
 {% endif %}
 </div>

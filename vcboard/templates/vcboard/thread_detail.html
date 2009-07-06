@@ -1,5 +1,5 @@
 {% extends 'vcboard/base.html' %}
-{% load i18n %}
+{% load i18n vcboard_tags %}
 
 {% block title %}{{ block.super }}: {{ thread }}{% endblock %}
 {% block vc-breadcrumb %}
@@ -9,6 +9,10 @@
 {% endblock %}
 
 {% block vc-content %}
+<h2>{{ thread.subject }}</h2>
+{% get_forum_perms forum as forum_perms %}
+
+{% include 'vcboard/_thread_controls.html' %}
 <table class="thread-table">
     {% with thread as post %}
     {% include 'vcboard/_thread_post.html' %}
@@ -17,4 +21,6 @@
     {% include 'vcboard/_thread_post.html' %}
     {% endfor %}
 </table>
+{% include 'vcboard/_thread_controls.html' %}
+{% include 'vcboard/_thread_pagination.html' %}
 {% endblock %}

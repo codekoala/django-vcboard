@@ -1,0 +1,11 @@
+{% load i18n %}
+<div class="pagination">
+    {% trans 'Pages:' %}
+    {% for p in paginator.page_range %}
+    {% ifequal p page.number %}
+        <span class="current-page">{{ p }}</span>
+    {% else %}
+        <a href="{% url vcboard-show-forum-page forum.path p %}">{{ p }}</a>
+    {% endifequal %}
+    {% endfor %}
+</div>

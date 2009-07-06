@@ -1,0 +1,26 @@
+{% extends 'vcboard/base.html' %}
+{% load i18n vcboard_tags %}
+
+{% block title %}{{ block.super }}: {% trans "Move" %} {{ thread }}{% endblock %}
+{% block vc-breadcrumb %}
+{{ block.super }} {% for f in forum.hierarchy %}
+&rsaquo; <a href="{{ f.get_absolute_url }}">{{ f.name }}</a>
+{% endfor %} &rsaquo; <a href="{{ thread.get_absolute_url }}">{{ thread.subject }}</a>
+&rsaquo; {% trans "Move Thread" %}
+{% endblock %}
+
+{% block vc-content %}
+<h2>{% trans "Move Thread:" %} {{ thread.subject }}</h2>
+
+<form action="." method="post">
+<p>{% blocktrans %}Please choose the forum to which you would like to move this thread.{% endblocktrans %}</p>
+
+{% if error %}<div class="error">{{ error }}</div>{% endif %}
+
+<select name="move_to_forum">
+{% for f in valid_forums %}<option value="{{ f.id }}">{{ f }}</option>
+{% endfor %}
+</select><br />
+<input type="submit" value="{% trans "Move Thread" %}" />
+</form>
+{% endblock %}
