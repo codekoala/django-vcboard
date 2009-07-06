@@ -5,6 +5,7 @@ from vcboard import views, listeners
 
 urlpatterns = patterns('vcboard.admin_views',
     url(r'^permissions/(?P<obj_type>\w+)/(?P<id>\d+)/$', 'permission_matrix', name='vcboard-permissions'),
+    url(r'^permissions/$', 'permission_matrix', name='vcboard-default-permissions'),
 )
 
 pre = lambda p: r'^forum/(?P<path>.*)/%s' % p

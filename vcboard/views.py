@@ -42,14 +42,10 @@ def show_forum(request, path, page=1, template='vcboard/forum_detail.html'):
     return render(request, template, data)
 
 @vcb.permission_required('start_threads')
-def create_thread(request, path, template='vcboard/thread_form.html'):
+def base_create_thread(request, forum, template):
     """
     Allows users to create a thread
     """
-    forum = Forum.objects.with_path(path)
-    if not forum:
-        raise Http404
-
     if request.method == 'POST':
         form = ThreadForm(request.POST)
         if form.is_valid():
@@ -75,6 +71,13 @@ def create_thread(request, path, template='vcboard/thread_form.html'):
     }
 
     return render(request, template, data)
+
+def create_thread(request, path, template='vcboard/thread_form.html'):
+    forum = Forum.objects.with_path(path)
+    if not forum:
+        raise Http404
+
+    return base_create_thread(request, forum, template)
 
 def base_show_thread(request, forum, thread, page, template):
     """

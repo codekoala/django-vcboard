@@ -73,6 +73,8 @@ class Setting(models.Model):
         permissions = (
             (PP('view_forum'), 'Can view forum'),
             (PP('view_other_threads'), 'Can view threads started by others'),
+            (PP('sticky_own_threads'), 'Can sticky own threads'),
+            (PP('sticky_other_threads'), 'Can sticky threads started by others'),
             (PP('edit_own_threads'), 'Can edit own threads'),
             (PP('edit_other_threads'), 'Can edit threads started by others'),
             (PP('close_own_threads'), 'Can close own threads'),
@@ -367,11 +369,20 @@ class PermissionMatrix(models.Model):
 class ForumPermission(PermissionMatrix):
     pass
 
+    class Meta:
+        unique_together = (('site','forum','permission',),)
+
 class GroupPermission(PermissionMatrix):
     group = models.ForeignKey(UserGroup)
 
+    class Meta:
+        unique_together = (('site','forum','group','permission',),)
+
 class UserPermission(PermissionMatrix):
     user = models.ForeignKey(User)
+
+    class Meta:
+        unique_together = (('site','forum','user','permission',),)
 
 class ForumProfile(models.Model):
     user = models.OneToOneField(User)

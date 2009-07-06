@@ -12,25 +12,31 @@ from vcboard.utils import render
 import re
 
 @staff_member_required
-def permission_matrix(request, obj_type, id, template='admin/permission_matrix.html'):
+def permission_matrix(request, obj_type=None, id=None, template='admin/permission_matrix.html'):
     """
     Allows the user to quickly adjust permissions for forums, groups, ranks
     and individual users
     """
 
+    site = Site.objects.get_current()
+    default_perms = False
     klass, matrix_type = {
         'forum': (Forum, ForumPermission),
         'group': (UserGroup, GroupPermission),
         'rank': (Rank, RankPermission),
         'user': (User, UserPermission),
-    }.get(obj_type, None)
+    }.get(obj_type, (None, None))
 
-    # only take the classes we want
-    if not klass:
-        raise Http404
-
-    obj = get_object_or_404(klass, pk=id)
-    permissions = matrix_type.objects.filter(**{str(obj_type + '__id'): obj.id})
+    if klass and id:
+        obj = get_object_or_404(klass, pk=id)
+        permissions = matrix_type.objects.filter(**{
+                            'site': site,
+                            str(obj_type + '__id'): obj.id})
+    else:
+        obj = None
+        default_perms = True
+        permissions = ForumPermission.objects.filter(site=site)
+        matrix_type = ForumPermission
 
     # make the forum permission matrix view slightly different
     forum = None
@@ -42,7 +48,6 @@ def permission_matrix(request, obj_type, id, template='admin/permission_matrix.h
         if form.is_valid():
             forums = {}
             perms = {}
-            site = Site.objects.get_current()
 
             for field_name in form.fields.keys():
                 forum_id, permission_id = re.findall('f_(\d+)_p_(\d+)', field_name)[0]
@@ -60,7 +65,7 @@ def permission_matrix(request, obj_type, id, template='admin/permission_matrix.h
                     perms[permission_id] = p
 
                 params = {'site': site, 'forum': f, 'permission': p}
-                if not forum:
+                if not forum and not default_perms:
                     params[str(obj_type)] = obj
 
                 perm, c = matrix_type.objects.get_or_create(**params)
@@ -87,7 +92,8 @@ def permission_matrix(request, obj_type, id, template='admin/permission_matrix.h
 
     data = {
         'object': obj,
-        'form': form
+        'form': form,
+        'default_perms': default_perms
     }
 
     return render(request, template, data)
